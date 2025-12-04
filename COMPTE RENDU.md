@@ -1,4 +1,5 @@
 ## 📄 Détection de Fraude – Compte Rendu du Projet
+<img width="400" height="250" alt="image" src="https://github.com/user-attachments/assets/a2c3ebce-f022-4246-843e-c58dcda56ea8" />
 
 Machine Learning – Détection de transactions suspectes
 
