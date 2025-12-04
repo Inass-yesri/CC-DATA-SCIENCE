@@ -4,208 +4,289 @@
 Par EL YESRI INASS 
 <img width="100" height="150" alt="image" src="https://github.com/user-attachments/assets/8ff73355-eaf0-42d3-ac75-12fdc08df8d2" />
 
-Machine Learning – Détection de transactions suspectes
+## 1. Introduction
 
-## 🟦 1. Introduction
+Le fichier DATE.SET.csv constitue la base du projet Machine Learning.
 
-## 🎯 Contexte
+Il contient :
 
-Dans le secteur financier, la détection automatique des transactions frauduleuses est un enjeu majeur.
+un identifiant client (client_id)
 
-Chaque jour, des millions d’opérations sont effectuées, et seule une infime partie correspond à des fraudes.
+une variable cible continue (target) comprise entre 0 et 1
 
-Les institutions doivent donc identifier ces anomalies rapidement, fiablement et sans intervention manuelle.
+L’objectif du projet est de développer un modèle prédictif capable d’estimer ce score target pour de nouveaux clients après enrichissement du dataset.
 
-## 🧩 Problématique
+## Ce rapport suit le cahier des charges officiel :
 
-Comment détecter automatiquement des transactions frauduleuses parmi des millions d’opérations financières, dans un contexte où les fraudes sont rares et difficiles à repérer ?
+dataset → preprocessing → EDA → modélisation → résultats → conclusion.
 
-## Les défis sont multiples :
+## 2. Le Dataset (Livrable 1)
 
-Déséquilibre important entre transactions normales et frauduleuses.
+## 2.1. Source & Sélection
 
-Volume massif de données.
+Fichier utilisé : DATE.SET.csv
 
-Variabilité des comportements utilisateurs.
+58 069 lignes
 
-Fraudeurs qui modifient leurs stratégies.
+2 colonnes
 
-## 🎯 Objectifs du projet
+Dataset adapté à un problème réaliste de scoring client, contrairement à des jeux triviaux (Iris, Titanic).
 
-Construire un pipeline complet d’analyse et de modélisation.
+## 2.2. Problématique et type de tâche
 
-Explorer les données pour comprendre les patterns de fraude.
+## Tâche : Régression supervisée
 
-Prétraiter et nettoyer les données (encodage, normalisation, gestion du déséquilibre).
+Objectif : prédire une variable target continue ∈ [0,1]
 
-Comparer plusieurs modèles de Machine Learning supervisé.
+Application : scoring client, probabilité, intensité, risque.
 
-Évaluer la performance via des métriques robustes (Recall, F1-Score, ROC-AUC).
+## 2.3. Dictionnaire de données
 
-Analyser les erreurs pour identifier les limites du système.
+Colonne	Type	Rôle	Description
 
-## 🟦 2. Méthodologie
+client_id	string	ID Client	Identifiant unique (ex: test_Client_0)
 
-## 🔧 2.1. Dataset utilisé
+# target	float64	Target	Score continu ∈ [0,1]
 
-Dataset : PaySim – Synthetic Financial Fraud Detection Dataset
+## 🔍 Statistiques de base
 
-## Taille : 6 millions de transactions
+Min ≈ 0
 
-## Proportion de fraude : extrêmement faible (~0.1%)
+Max ≈ 1
 
-Pourquoi ce dataset ?
+Moyenne ≈ 0.50
 
-## ✔️ Données financières réelles simulées
+Écart-type ≈ 0.29
 
-## ✔️ Fort déséquilibre → parfait pour la fraude
+## 3. Méthodologie & Graphiques (Livrable 2+3)
 
-## ✔️ Données massives → cas réel
+## 3.1. Pré-traitement (Preprocessing)
+```python
+import pandas as pd
 
-✔️ Variables catégorielles + numériques → modèle polyvalent
+df = pd.read_csv("DATE.SET.csv")
+df.info()
+df.describe()
+df.duplicated().sum()
+```
+## 🎯 Choix techniques justifiés :
 
-## 🧼 2.2. Prétraitement & Nettoyage
+Le dataset est propre mais devra être enrichi.
 
-## ✔️ Encodage des variables catégorielles
+client_id sera utilisé pour joindre d'autres tables.
 
-La colonne type contient des valeurs textuelles (CASH-IN, TRANSFER...).
+Aucun modèle n’accepte les strings → encodages nécessaires après jointure.
 
-➡️ One-Hot Encoding choisi pour permettre une meilleure séparation linéaire.
+Normalisation obligatoire si SVM, KNN ou MLP sont utilisés.
 
-## ✔️ Normalisation des montants
+## 3.2. Analyse Exploratoire (EDA)
 
-Les colonnes amount et balance présentent de grandes variations.
+# 📌 Graphique 1 — Histogramme de la variable cible
+```python
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-➡️ StandardScaler choisi pour faciliter la convergence des modèles linéaires (Logistic Regression, SVM).
-
-## ✔️ Gestion du déséquilibre
-
-Le dataset est très déséquilibré (fraude ≪ non fraude).
-
-## Deux approches testées :
-
-## class_weight="balanced"
-
-## SMOTE pour générer des fraudes synthétiques
-
-➡️ Le meilleur compromis a été obtenu avec class_weight, moins risqué que SMOTE pour éviter le surfitting.
-
-## ⚙️ 2.3. Modèles testés
-
-## Plusieurs algorithmes ont été évalués :
-
-## Modèle	Avantages	Inconvénients
-
-Logistic Regression	Simple, rapide, baseline	Peu performant sur patterns complexes
-
-Random Forest	Robuste, non linéaire	Sensible au déséquilibre
-
-XGBoost	Très performant, gère bien l'imprévisible	Long à entraîner
-
-Isolation Forest (Anomaly Detection)	Indépendant des labels	Faible précision pour les fraudes
-
-## Choix final :
-
-👉 Random Forest & XGBoost, car ce sont les modèles les plus adaptés aux patterns non linéaires et au déséquilibre.
-
-## 🟦 3. Résultats & Discussion
-
-L’évaluation s’effectue sur plusieurs métriques, car dans un contexte de fraude :
-
-❗ L’accuracy n’est pas fiable (un modèle peut avoir 99.9% d’accuracy et rater toutes les fraudes).
-
-## 📊 3.1. Matrice de confusion
-
-## Prédit
-
-## 0         1
-
-## Réel  0       TN        FP
-
-## 1       FN        TP
-
-## Points analysés :
-
-FN (False Negatives) : transactions frauduleuses non détectées → les plus critiques.
-
-FP (False Positives) : transactions normales signalées à tort → coût opérationnel.
-
-Un bon modèle doit maximiser le Recall tout en maintenant un F1 élevé.
-
-## 📈 3.2. Métriques obtenues
-
-## Métrique	Score
-
-## Accuracy	élevée mais peu informative
-
-## Precision	correcte
-
-Recall (important)	élevé → peu de fraudes manquées
-
-## F1-Score	bon compromis
-
-## ROC-AUC	> 0.95, excellent
-
+plt.figure(figsize=(7,4))
+sns.histplot(df["target"], bins=30, kde=True)
+plt.title("Distribution de la variable target")
+plt.xlabel("Score target")
+plt.ylabel("Fréquence")
+plt.show()
+```
 ## Interprétation :
 
-Le modèle détecte la plupart des fraudes.
+La distribution est quasi uniforme entre 0 et 1, mais une légère densité apparaît autour de 0.5.
 
-Il génère un certain nombre de faux positifs (normal en contexte bancaire).
+Cela confirme :
 
-Un bon rappel signifie que le modèle "rate" très peu de fraudes, ce qui est crucial.
+une bonne variabilité pour la modélisation,
 
-## 🧠 3.3. Analyse des erreurs
+absence de déséquilibre,
 
-## Les erreurs les plus fréquentes concernent :
+pas de transformation de type log à appliquer.
 
-Transactions avec montant faible mais comportement anormal (difficile à capturer).
+# 📌Graphique 2 — Boxplot de target (détection d’outliers)
 
-Patterns de fraude sophistiqués proches des comportements normaux.
+```python
+plt.figure(figsize=(6,3))
+sns.boxplot(x=df["target"])
+plt.title("Boxplot de la cible target")
+plt.show()
+```
+## Interprétation :
 
-Cas où le solde destination/origine suit des schémas réguliers malgré une fraude.
+Le boxplot montre :
 
-## Ces erreurs sont typiques lorsque :
+aucune valeur aberrante extrême,
 
-## Le dataset est simulé
+une dispersion homogène.
 
-## La fraude évolue dans le temps
+Cela confirme que le dataset ne nécessite pas de traitement d’outliers pour la cible.
 
-## 🟦 4. Conclusion
+# 📌Graphique 3 — Heatmap préliminaire (corrélations)
 
-## ✔️ Ce que le modèle réussit bien
+Ce graphique sera plus utile après jointures mais on en illustre le fonctionnement :
+```python
+import numpy as np
 
-Très bonne capacité à détecter les fraudes (Recall élevé).
+plt.figure(figsize=(3,3))
+corr = df[["target"]].corr()
+sns.heatmap(corr, annot=True, cmap="Blues")
+plt.title("Corrélation de la target (dataset initial)")
+plt.show()
+```
+## Interprétation :
 
-ROC-AUC excellent → modèle capable de séparer les classes.
+La corrélation n’a de sens qu’avec plus de colonnes.
 
-Adapté à des données volumineuses.
+Dans la version finale du dataset (après ajouts de features), cette heatmap permettra :
 
-## ❌ Limites du modèle
+d’identifier les variables explicatives pertinentes
 
-Faux positifs encore trop nombreux → coût opérationnel.
+de détecter la multicolinéarité,
 
-Données simulées → comportements parfois simplifiés.
+d’orienter le feature engineering.
 
-Dépend fortement des features disponibles.
+# 📌Graphique 4 — Distribution cumulée (CDF)
 
-## 🚀 Pistes d’amélioration
+```python
+import numpy as np
 
-Intégrer des modèles complexes : Deep Learning, Autoencoders, GNN.
+plt.figure(figsize=(7,4))
+sorted_target = np.sort(df["target"])
+yvals = np.arange(len(sorted_target)) / float(len(sorted_target)-1)
+plt.plot(sorted_target, yvals)
+plt.title("Fonction de distribution cumulée – target")
+plt.xlabel("target")
+plt.ylabel("Probabilité cumulée")
+plt.grid()
+plt.show()
+```
+## Interprétation :
 
-Ajouter des informations temporelles (séquence de transactions).
+La CDF montre une progression régulière, confirmant que le score est étalé dans tout l’intervalle [0,1].
 
-## Utiliser des approches hybrides :
+Cela signifie qu’un modèle pourra apprendre des différences fines entre individus.
 
-## Anomaly Detection + Classification
+## 3.3. Modélisation (Machine Learning)
 
-## Ensembles de modèles (Stacking)
+🔧 Modèles testés (3 minimum)
 
-Ajouter un système en ligne (mise à jour continue du modèle).
+Régression Linéaire
 
-## 🟩 5. Références
+Random Forest Regressor
 
-## Dataset PaySim – Kaggle
+Gradient Boosting / XGBoost / LightGBM
 
-## Algorithmes : Scikit-learn, XGBoost
+# 🔁 Validation
 
-## Métriques ML standard : Precision, Recall, AUC
+Cross-Validation K-Fold (k=5 ou 10)
+
+GridSearchCV / RandomizedSearchCV
+
+# 📊 Exemple de code de modélisation
+
+```python
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.metrics import mean_squared_error, r2_score
+import numpy as np
+
+X = df.drop(columns=["target"])
+y = df["target"]
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+
+models = {
+    "LinearRegression": LinearRegression(),
+    "RandomForest": RandomForestRegressor(),
+    "GradientBoosting": GradientBoostingRegressor()
+}
+
+results = {}
+for name, model in models.items():
+    model.fit(X_train, y_train)
+    preds = model.predict(X_test)
+    results[name] = {
+        "RMSE": np.sqrt(mean_squared_error(y_test, preds)),
+        "R2": r2_score(y_test, preds)
+    }
+
+results
+```
+## 4. Résultats & Discussion
+
+⚠️ À compléter avec tes résultats réels une fois l'entraînement effectué.
+
+ | Modèle              | RMSE | MAE  | R²   |
+
+ | ------------------- | ---- | ---- | ---- |
+
+ | Régression Linéaire | TODO | TODO | TODO |
+
+ | Random Forest       | TODO | TODO | TODO |
+
+ | Gradient Boosting   | TODO | TODO | TODO |
+
+# 4.2. Analyse des résidus (Graphique)
+```python
+
+import matplotlib.pyplot as plt
+
+model = GradientBoostingRegressor().fit(X_train, y_train)
+preds = model.predict(X_test)
+residuals = y_test - preds
+
+plt.figure(figsize=(7,4))
+sns.histplot(residuals, bins=30, kde=True)
+plt.title("Distribution des résidus")
+plt.xlabel("Erreur (y_true - y_pred)")
+plt.show()
+```
+## Interprétation :
+
+Un résidu centré autour de 0 → modèle non biaisé
+
+Dispersion faible → modèle précis
+
+Distribution asymétrique → signe d'underfitting ou d’overfitting selon la forme
+
+## 5. Conclusion
+
+Le dataset DATE.SET.csv constitue une base solide pour un projet complet de régression :
+
+## 🔹 Points forts
+
+Target bien distribuée
+
+Dataset propre
+
+Compatible avec enrichissement (clé client)
+
+Idéal pour ML tabulaire
+
+## 🔹 Limites
+
+Seulement 2 colonnes → nécessite un enrichissement par jointures
+
+Pas d’information métier sur la signification exacte de target
+
+## 🔹 Améliorations possibles
+
+Ajouter des variables comportementales / socio-démographiques
+
+Tester XGBoost et LightGBM
+
+Ajouter SHAP / LIME pour l’explicabilité
+
+Packager le modèle dans une API + pipeline MLOps
+
+
+
+
+
+
+
+
+
